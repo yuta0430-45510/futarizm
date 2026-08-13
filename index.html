@@ -6,439 +6,396 @@
 <title>フタリズム</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Kaisei+Decol&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<style>body{margin:0;font-family:'Zen Maru Gothic',sans-serif;}</style>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Zen Maru Gothic', sans-serif; background:#F1EAE0; }
+  .wrap { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 16px; }
+  .title-jp { font-family:'Kaisei Decol', serif; }
+  .swatch-btn { display:flex; align-items:center; gap:8px; border-radius:999px; padding:6px 12px 6px 6px; background:#fff; cursor:pointer; font-size:11px; font-weight:700; color:#4A4038; }
+  .dot { width:16px; height:16px; border-radius:50%; border:1px solid #fff; margin-left:-4px; }
+  .dot:first-child { margin-left:0; }
+  .phone { position:relative; border-radius:2.5rem; padding:12px; box-shadow:0 20px 40px rgba(0,0,0,.3); background:#2A2620; width:360px; }
+  .screen { border-radius:2rem; overflow:hidden; position:relative; height:680px; }
+  .notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:22px; background:#2A2620; border-radius:0 0 16px 16px; z-index:10; }
+  .col { display:flex; flex-direction:column; height:100%; }
+  .scroll { flex:1; overflow-y:auto; padding:0 20px 8px 20px; }
+  .btn { border:none; cursor:pointer; border-radius:16px; padding:12px; text-align:center; font-size:13px; font-weight:700; font-family:'Zen Maru Gothic',sans-serif; width:100%; }
+  .pill { border-radius:999px; padding:8px 16px; font-size:12px; font-weight:700; border:1px solid; cursor:pointer; font-family:'Zen Maru Gothic',sans-serif; }
+  input[type=text] { font-family:'Zen Maru Gothic',sans-serif; font-size:13px; padding:12px 16px; border-radius:12px; outline:none; width:100%; }
+  .navctrl { display:flex; align-items:center; gap:16px; margin-top:24px; }
+  .navbtn { width:36px; height:36px; border-radius:50%; background:#fff; border:1px solid #E7DCCE; cursor:pointer; font-size:16px; color:#4A4038; }
+</style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" data-presets="react">
-const { useState, useMemo } = React;
-
-const PALETTES = {
+<div id="app"></div>
+<script>
+/* ---------------- palettes ---------------- */
+var PALETTES = {
   elegant: { name: "現行(エレガント)", cream: "#FBF6EE", ink: "#4A4038", inkSoft: "#8A7E71", primary: "#B98CA6", primaryDeep: "#A2748A", secondary: "#92A985", secondaryDeep: "#748F69", accent: "#F0C36D", line: "#E7DCCE", white: "#FFFFFF", swatch: ["#B98CA6", "#92A985", "#F0C36D"] },
   candy: { name: "A. キャンディポップ", cream: "#FFF7F5", ink: "#3D2B32", inkSoft: "#8C6F78", primary: "#FF8FA3", primaryDeep: "#E85D77", secondary: "#4ECDC4", secondaryDeep: "#2FA79D", accent: "#FFE066", line: "#FFE1E6", white: "#FFFFFF", swatch: ["#FF8FA3", "#4ECDC4", "#FFE066"] },
   retro: { name: "B. レトロポップ", cream: "#FBF3E3", ink: "#2E2013", inkSoft: "#7A6A52", primary: "#E8604C", primaryDeep: "#C94430", secondary: "#2E4057", secondaryDeep: "#1C2838", accent: "#F2A93B", line: "#EAD9B8", white: "#FFFDF7", swatch: ["#E8604C", "#2E4057", "#F2A93B"] },
-  softpop: { name: "C. やわらかポップ", cream: "#FFF8F4", ink: "#4A3B34", inkSoft: "#8C7A70", primary: "#FFB4A2", primaryDeep: "#E8907C", secondary: "#8FD6BD", secondaryDeep: "#5CB79C", accent: "#FFDE85", line: "#FFE3D9", white: "#FFFFFF", swatch: ["#FFB4A2", "#8FD6BD", "#FFDE85"] },
+  softpop: { name: "C. やわらかポップ", cream: "#FFF8F4", ink: "#4A3B34", inkSoft: "#8C7A70", primary: "#FFB4A2", primaryDeep: "#E8907C", secondary: "#8FD6BD", secondaryDeep: "#5CB79C", accent: "#FFDE85", line: "#FFE3D9", white: "#FFFFFF", swatch: ["#FFB4A2", "#8FD6BD", "#FFDE85"] }
 };
-
-const SCREENS = [
+var SCREENS = [
   { key: "home", label: "ホーム" },
   { key: "diagnosis", label: "診断" },
   { key: "report", label: "レポート" },
   { key: "script", label: "会話台本" },
-  { key: "log", label: "家事ログ" },
+  { key: "log", label: "家事ログ" }
 ];
-
-const QUESTIONS = [
+var QUESTIONS = [
   { id: "q1", text: "実家では、家事は主に誰がしていましたか？", options: ["母", "父", "二人で半々", "祖父母など"] },
   { id: "q2", text: "「名もなき家事」に、より気づいて対応しているのはどちらだと思いますか？", options: ["自分の方が気づいている", "パートナーの方が気づいている", "ふたり同じくらい", "わからない"] },
   { id: "q3", text: "今の家事分担にどれくらい満足していますか？", options: ["1 とても不満", "2 やや不満", "3 普通", "4 やや満足", "5 とても満足"] },
-  { id: "q4", text: "一番負担に感じている家事は何ですか？", options: ["料理", "掃除", "買い物", "名もなき家事全般"] },
+  { id: "q4", text: "一番負担に感じている家事は何ですか？", options: ["料理", "掃除", "買い物", "名もなき家事全般"] }
 ];
 
+/* ---------------- URL-based data passing ---------------- */
 function encodeData(obj) { return encodeURIComponent(JSON.stringify(obj)); }
 function decodeData(str) { try { return JSON.parse(decodeURIComponent(str)); } catch (e) { return null; } }
 function parseHash() {
-  const h = window.location.hash;
-  if (!h || !h.startsWith("#d=")) return null;
+  var h = window.location.hash;
+  if (!h || h.indexOf("#d=") !== 0) return null;
   return decodeData(h.slice(3));
 }
 function buildLink(payload) {
-  const base = `${window.location.origin}${window.location.pathname}${window.location.search}`;
-  return `${base}#d=${encodeData(payload)}`;
+  var base = window.location.origin + window.location.pathname + window.location.search;
+  return base + "#d=" + encodeData(payload);
 }
 
+/* ---------------- rule-based analysis ---------------- */
 function selfShare(q2) {
   if (q2 === "自分の方が気づいている") return 65;
   if (q2 === "パートナーの方が気づいている") return 35;
   return 50;
 }
-function satNum(q3) { const n = parseInt(q3, 10); return isNaN(n) ? 3 : n; }
+function satNum(q3) { var n = parseInt(q3, 10); return isNaN(n) ? 3 : n; }
 function computeReport(a, b) {
-  const nameA = a.name, nameB = b.name;
-  const aFromA = selfShare(a.answers.q2);
-  const aFromB = 100 - selfShare(b.answers.q2);
-  let invisibleA = Math.round((aFromA + aFromB) / 2);
+  var nameA = a.name, nameB = b.name;
+  var aFromA = selfShare(a.answers.q2);
+  var aFromB = 100 - selfShare(b.answers.q2);
+  var invisibleA = Math.round((aFromA + aFromB) / 2);
   invisibleA = Math.min(85, Math.max(15, invisibleA));
-  const invisibleCat = { label: "名もなき家事", [nameA]: invisibleA, [nameB]: 100 - invisibleA };
+  var invisibleCat = { label: "名もなき家事" };
+  invisibleCat[nameA] = invisibleA; invisibleCat[nameB] = 100 - invisibleA;
   function burdenCat(label) {
-    const aw = a.answers.q4 === label ? 65 : 50;
-    const bw = b.answers.q4 === label ? 65 : 50;
-    const total = aw + bw;
-    const aPct = Math.round((aw / total) * 100);
-    return { label, [nameA]: aPct, [nameB]: 100 - aPct };
+    var aw = a.answers.q4 === label ? 65 : 50;
+    var bw = b.answers.q4 === label ? 65 : 50;
+    var total = aw + bw;
+    var aPct = Math.round((aw / total) * 100);
+    var c = { label: label };
+    c[nameA] = aPct; c[nameB] = 100 - aPct;
+    return c;
   }
-  const categories = [invisibleCat, burdenCat("料理"), burdenCat("掃除"), burdenCat("買い物")];
-  let maxGapCat = categories[0], maxDiff = -1;
-  categories.forEach((c) => { const diff = Math.abs(c[nameA] - 50); if (diff > maxDiff) { maxDiff = diff; maxGapCat = c; } });
-  const leaderName = maxGapCat[nameA] > maxGapCat[nameB] ? nameA : nameB;
-  const followerName = leaderName === nameA ? nameB : nameA;
-  let insight = `もっとも差が大きいのは「${maxGapCat.label}」でした。${leaderName}さんの方が日常的に気づいて対応している可能性が高く、${followerName}さんはその存在に気づきにくい状況にあるかもしれません。どちらが悪いという話ではなく、「見えているものが違う」ところから会話を始めてみましょう。`;
-  const lowSat = Math.min(satNum(a.answers.q3), satNum(b.answers.q3));
-  if (lowSat <= 2) insight += ` 満足度の回答からも、ふたりで一度ゆっくり話す価値があるタイミングのようです。`;
-  const script_direct = `「${maxGapCat.label}、私ばっかりやってる気がするんだよね。一度ちゃんと話したい。」`;
-  const script_soft = `「最近、${maxGapCat.label}を私が抱えがちだなって感じてて。今度10分だけ、一緒に整理してみない？」`;
-  return { nameA, nameB, categories, insight, script_direct, script_soft };
+  var categories = [invisibleCat, burdenCat("料理"), burdenCat("掃除"), burdenCat("買い物")];
+  var maxGapCat = categories[0], maxDiff = -1;
+  categories.forEach(function(c) { var diff = Math.abs(c[nameA] - 50); if (diff > maxDiff) { maxDiff = diff; maxGapCat = c; } });
+  var leaderName = maxGapCat[nameA] > maxGapCat[nameB] ? nameA : nameB;
+  var followerName = leaderName === nameA ? nameB : nameA;
+  var insight = "もっとも差が大きいのは「" + maxGapCat.label + "」でした。" + leaderName + "さんの方が日常的に気づいて対応している可能性が高く、" + followerName + "さんはその存在に気づきにくい状況にあるかもしれません。どちらが悪いという話ではなく、「見えているものが違う」ところから会話を始めてみましょう。";
+  var lowSat = Math.min(satNum(a.answers.q3), satNum(b.answers.q3));
+  if (lowSat <= 2) insight += " 満足度の回答からも、ふたりで一度ゆっくり話す価値があるタイミングのようです。";
+  var script_direct = "「" + maxGapCat.label + "、私ばっかりやってる気がするんだよね。一度ちゃんと話したい。」";
+  var script_soft = "「最近、" + maxGapCat.label + "を私が抱えがちだなって感じてて。今度10分だけ、一緒に整理してみない？」";
+  return { nameA: nameA, nameB: nameB, categories: categories, insight: insight, script_direct: script_direct, script_soft: script_soft };
 }
 
-function BlendMark({ C, size = 96, meLabel, partnerLabel, meShare = 50 }) {
-  const r = size * 0.34;
-  const gap = size * 0.22 * (1 - meShare / 100) + size * 0.06;
-  return (
-    <div className="relative" style={{ width: size * 1.7, height: size }}>
-      <svg width={size * 1.7} height={size} viewBox={`0 0 ${size * 1.7} ${size}`}>
-        <circle cx={size * 0.5} cy={size / 2} r={r} fill={C.primary} opacity="0.85" style={{ mixBlendMode: "multiply" }} />
-        <circle cx={size * 0.5 + gap} cy={size / 2} r={r} fill={C.secondary} opacity="0.85" style={{ mixBlendMode: "multiply" }} />
-      </svg>
-      <div className="absolute text-[10px] font-bold" style={{ left: size * 0.08, top: size * 0.86, color: C.primaryDeep }}>{meLabel}</div>
-      <div className="absolute text-[10px] font-bold" style={{ left: size * 0.5 + gap + r * 0.3, top: size * 0.86, color: C.secondaryDeep }}>{partnerLabel}</div>
-    </div>
-  );
+/* ---------------- state ---------------- */
+var state = {
+  screenIdx: 0,
+  paletteKey: "elegant",
+  parsed: parseHash(),
+  myName: "",
+  myAnswers: null,
+  diagStep: 0,
+  tempAnswers: {},
+  scriptSoft: false,
+  logDone: { 1: true, 2: true, 3: false }
+};
+state.mode = (state.parsed && state.parsed.a && state.parsed.b) ? "result" : (state.parsed && state.parsed.a) ? "join" : "start";
+if (state.mode === "result") {
+  state.report = computeReport(state.parsed.a, state.parsed.b);
 }
 
-function ScreenHeader({ C, title, sub }) {
-  return (
-    <div className="px-5 pt-6 pb-3">
-      <div className="text-[11px] tracking-wide font-bold mb-1" style={{ color: C.secondaryDeep }}>{sub}</div>
-      <div className="text-[20px] font-bold leading-snug" style={{ color: C.ink, fontFamily: "'Kaisei Decol', serif" }}>{title}</div>
-    </div>
-  );
+function esc(s) { var d = document.createElement("div"); d.innerText = s; return d.innerHTML; }
+
+function getReport() {
+  if (state.mode === "result") return state.report;
+  if (state.mode === "join" && state.myAnswers) return computeReport(state.parsed.a, { name: state.myName, answers: state.myAnswers });
+  return null;
+}
+function getShareLink() {
+  if (state.mode === "start" && state.myAnswers) return buildLink({ a: { name: state.myName, answers: state.myAnswers } });
+  return "";
+}
+function getResultLink() {
+  if (state.mode === "join" && state.myAnswers) return buildLink({ a: state.parsed.a, b: { name: state.myName, answers: state.myAnswers } });
+  if (state.mode === "result") return window.location.origin + window.location.pathname + window.location.hash;
+  return "";
 }
 
-function TabBar({ C, active, goTo }) {
-  const tabs = [
-    { icon: "🏠", label: "ホーム", key: "home" },
-    { icon: "✅", label: "ログ", key: "log" },
-    { icon: "📊", label: "レポート", key: "report" },
-    { icon: "⚙", label: "設定", key: "settings" },
-  ];
-  return (
-    <div className="flex items-center justify-around border-t" style={{ borderColor: C.line, background: C.white, paddingBottom: 18, paddingTop: 8 }}>
-      {tabs.map((t) => {
-        const isActive = t.key === active;
-        return (
-          <button key={t.key} onClick={() => t.key !== "settings" && goTo(t.key)} className="flex flex-col items-center gap-1" style={{ width: 56 }}>
-            <span style={{ fontSize: 16, opacity: isActive ? 1 : 0.5 }}>{t.icon}</span>
-            <span className="text-[10px]" style={{ color: isActive ? C.primaryDeep : C.inkSoft, fontWeight: isActive ? 700 : 500 }}>{t.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+/* ---------------- screen builders ---------------- */
+function header(C, title, sub) {
+  return '<div style="padding:24px 20px 12px 20px;">' +
+    '<div style="font-size:11px;font-weight:700;margin-bottom:4px;color:' + C.secondaryDeep + ';">' + esc(sub) + '</div>' +
+    '<div class="title-jp" style="font-size:20px;font-weight:700;color:' + C.ink + ';">' + esc(title) + '</div></div>';
+}
+function tabBar(C, active) {
+  var tabs = [["home","🏠","ホーム"],["log","✅","ログ"],["report","📊","レポート"],["settings","⚙","設定"]];
+  var html = '<div style="display:flex;align-items:center;justify-content:space-around;border-top:1px solid ' + C.line + ';background:' + C.white + ';padding:8px 0 18px 0;">';
+  tabs.forEach(function(t) {
+    var isActive = t[0] === active;
+    var color = isActive ? C.primaryDeep : C.inkSoft;
+    html += '<button data-action="goto" data-value="' + t[0] + '" style="background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;width:56px;cursor:pointer;">' +
+      '<span style="font-size:16px;opacity:' + (isActive?1:0.5) + ';">' + t[1] + '</span>' +
+      '<span style="font-size:10px;color:' + color + ';font-weight:' + (isActive?700:500) + ';">' + t[2] + '</span></button>';
+  });
+  return html + '</div>';
+}
+function blendMark(C, meLabel, partnerLabel, meShare) {
+  var size = 96, r = size*0.34;
+  var gap = size*0.22*(1-meShare/100) + size*0.06;
+  return '<svg width="' + (size*1.7) + '" height="' + size + '" viewBox="0 0 ' + (size*1.7) + ' ' + size + '">' +
+    '<circle cx="' + (size*0.5) + '" cy="' + (size/2) + '" r="' + r + '" fill="' + C.primary + '" opacity="0.85" style="mix-blend-mode:multiply"/>' +
+    '<circle cx="' + (size*0.5+gap) + '" cy="' + (size/2) + '" r="' + r + '" fill="' + C.secondary + '" opacity="0.85" style="mix-blend-mode:multiply"/></svg>' +
+    '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;margin-top:-8px;padding:0 8px;">' +
+    '<span style="color:' + C.primaryDeep + ';">' + esc(meLabel) + '</span><span style="color:' + C.secondaryDeep + ';">' + esc(partnerLabel) + '</span></div>';
 }
 
-function LinkBox({ C, label, url }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-    catch (e) { setCopied(false); }
-  };
-  return (
-    <div className="rounded-2xl p-4 mb-4" style={{ background: C.white, border: `1px solid ${C.line}` }}>
-      <div className="text-[11px] font-bold mb-2" style={{ color: C.secondaryDeep }}>🔗 {label}</div>
-      <input readOnly value={url} onFocus={(e) => e.target.select()} className="w-full rounded-lg px-3 py-2 text-[11px] mb-2 outline-none" style={{ background: C.cream, border: `1px solid ${C.line}`, color: C.ink, fontFamily: "monospace" }} />
-      <button onClick={copy} className="w-full rounded-xl py-2 text-[12px] font-bold" style={{ background: copied ? C.secondary : C.ink, color: "#fff" }}>{copied ? "コピーしました" : "📋 リンクをコピー"}</button>
-      <div className="text-[10px] mt-2" style={{ color: C.inkSoft }}>コピーできない場合は、上のボックスを長押しして手動でコピーしてください。</div>
-    </div>
-  );
+function screenHome(C) {
+  var report = getReport();
+  var mainCat = report ? report.categories[0] : null;
+  var body = '<div class="col" style="background:' + C.cream + ';">' +
+    header(C, state.myName ? ("おかえりなさい、" + state.myName + "さん") : "フタリズムへようこそ", "2026年8月12日(水)") +
+    '<div class="scroll">' +
+    '<div style="border-radius:24px;padding:20px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;background:' + C.white + ';border:1px solid ' + C.line + ';">' +
+    '<div style="font-size:12px;margin-bottom:8px;color:' + C.inkSoft + ';">今週の「ふたりのリズム」</div>';
+  if (mainCat) {
+    body += blendMark(C, report.nameA, report.nameB, mainCat[report.nameA]) +
+      '<div style="margin-top:12px;font-size:13px;text-align:center;line-height:1.7;color:' + C.ink + ';">' + esc(mainCat.label) + 'の負担感、<br>' + esc(report.nameA) + ' ' + mainCat[report.nameA] + '% ／ ' + esc(report.nameB) + ' ' + mainCat[report.nameB] + '%</div>';
+  } else {
+    body += '<div style="font-size:12.5px;text-align:center;line-height:1.7;padding:16px 0;color:' + C.inkSoft + ';">' + (state.mode === "start" ? "診断してリンクを作り、パートナーに送ると分析が見られます" : "パートナーの回答が届くと、ここに分析結果が表示されます") + '</div>';
+  }
+  body += '</div>' +
+    '<button data-action="goto" data-value="diagnosis" style="width:100%;text-align:left;border:none;cursor:pointer;border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:12px;background:' + C.primary + ';">' +
+    '<span style="font-size:18px;color:#fff;">✨</span><div>' +
+    '<div style="color:#fff;font-size:13px;font-weight:700;margin-bottom:4px;">' + (report ? "内容をおさらいする" : "診断へ進む") + '</div>' +
+    '<div style="color:#fff;font-size:13px;line-height:1.6;">' + (report ? "レポートと会話のたたき台を確認できます。" : "4つの質問に答えて、ふたりのリズムを確かめましょう。") + '</div></div></button>' +
+    '</div>' + tabBar(C, "home") + '</div>';
+  return body;
 }
 
-function QuestionFlow({ C, onDone }) {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const q = QUESTIONS[step];
-  return (
-    <>
-      <div className="px-3">
-        <div className="h-1.5 rounded-full mx-2" style={{ background: C.line }}>
-          <div className="h-1.5 rounded-full transition-all" style={{ width: `${((step + 1) / QUESTIONS.length) * 100}%`, background: C.secondary }} />
-        </div>
-      </div>
-      <div className="px-5 flex-1 overflow-y-auto py-4 flex flex-col gap-3">
-        <div className="flex items-end gap-2">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: C.secondary }}><span style={{fontSize:12}}>✨</span></div>
-          <div className="rounded-2xl rounded-bl-sm px-4 py-3 max-w-[80%] text-[13px] leading-relaxed" style={{ background: C.white, color: C.ink }}>{q.text}</div>
-        </div>
-        <div className="flex flex-wrap gap-2 pl-9">
-          {q.options.map((op) => (
-            <button key={op} onClick={() => setAnswers((a) => ({ ...a, [q.id]: op }))} className="px-4 py-2 rounded-full text-[12px] font-bold border transition" style={{ borderColor: answers[q.id] === op ? C.primaryDeep : C.line, background: answers[q.id] === op ? C.primary : C.white, color: answers[q.id] === op ? "#fff" : C.ink }}>{op}</button>
-          ))}
-        </div>
-      </div>
-      <div className="px-5 pb-6">
-        <button disabled={!answers[q.id]} onClick={() => { if (step < QUESTIONS.length - 1) setStep((s) => s + 1); else onDone(answers); }} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold" style={{ background: answers[q.id] ? C.ink : C.line, color: answers[q.id] ? "#fff" : C.inkSoft }}>{step < QUESTIONS.length - 1 ? "次へ →" : "回答を送信する ➤"}</button>
-      </div>
-    </>
-  );
-}
-
-function NameForm({ C, subtitle, onSubmit }) {
-  const [name, setName] = useState("");
-  return (
-    <div className="px-5 flex-1 overflow-y-auto py-2 flex flex-col gap-3">
-      <div className="text-[13px] leading-relaxed mb-1" style={{ color: C.ink }}>{subtitle}</div>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="あなたの名前" className="rounded-xl px-4 py-3 text-[13px] outline-none" style={{ background: C.white, border: `1px solid ${C.line}`, color: C.ink }} />
-      <button disabled={!name} onClick={() => onSubmit(name)} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold" style={{ background: name ? C.ink : C.line, color: name ? "#fff" : C.inkSoft }}>診断へ進む</button>
-    </div>
-  );
-}
-
-function HomeScreen({ C, goTo, ctx }) {
-  const { report, mode, myName } = ctx;
-  const mainCat = report?.categories?.[0];
-  return (
-    <div className="flex flex-col h-full" style={{ background: C.cream }}>
-      <ScreenHeader C={C} sub="2026年8月12日(水)" title={myName ? `おかえりなさい、${myName}さん` : "フタリズムへようこそ"} />
-      <div className="px-5 flex-1 overflow-y-auto pb-2">
-        <div className="rounded-3xl p-5 mb-4 flex flex-col items-center" style={{ background: C.white, border: `1px solid ${C.line}` }}>
-          <div className="text-[12px] mb-2" style={{ color: C.inkSoft }}>今週の「ふたりのリズム」</div>
-          {mainCat ? (
-            <>
-              <BlendMark C={C} meLabel={report.nameA} partnerLabel={report.nameB} meShare={mainCat[report.nameA]} />
-              <div className="mt-3 text-[13px] text-center leading-relaxed" style={{ color: C.ink }}>{mainCat.label}の負担感、<br />{report.nameA} {mainCat[report.nameA]}% ／ {report.nameB} {mainCat[report.nameB]}%</div>
-            </>
-          ) : (
-            <div className="text-[12.5px] text-center leading-relaxed py-4" style={{ color: C.inkSoft }}>{mode === "start" ? "診断してリンクを作り、パートナーに送ると分析が見られます" : "パートナーの回答が届くと、ここに分析結果が表示されます"}</div>
-          )}
-        </div>
-        <button onClick={() => goTo("diagnosis")} className="w-full text-left rounded-2xl p-4 mb-4 flex items-start gap-3" style={{ background: C.primary }}>
-          <span style={{fontSize:18,color:'#fff'}}>✨</span>
-          <div>
-            <div className="text-white text-[13px] font-bold mb-1">{report ? "内容をおさらいする" : "診断へ進む"}</div>
-            <div className="text-white text-[13px] leading-relaxed">{report ? "レポートと会話のたたき台を確認できます。" : "4つの質問に答えて、ふたりのリズムを確かめましょう。"}</div>
-          </div>
-        </button>
-      </div>
-      <TabBar C={C} active="home" goTo={goTo} />
-    </div>
-  );
-}
-
-function DiagnosisScreen({ C, goTo, ctx, actions }) {
-  const { mode, parsed, myName, myAnswers, report, shareLink, resultLink } = ctx;
+function screenDiagnosis(C) {
+  var mode = state.mode, parsed = state.parsed;
   if (mode === "result") {
-    return (
-      <div className="flex flex-col h-full" style={{ background: C.cream }}>
-        <ScreenHeader C={C} sub={`${report.nameA} & ${report.nameB}`} title="診断は完了しています" />
-        <div className="px-5 flex-1 overflow-y-auto py-2">
-          <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.inkSoft }}>このリンクには、ふたり分の回答がすでに含まれています。レポートタブで結果を確認してください。</div>
-          <button onClick={() => goTo("report")} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold" style={{ background: C.ink, color: "#fff" }}>レポートを見る</button>
-        </div>
-        <TabBar C={C} active="diagnosis" goTo={goTo} />
-      </div>
-    );
+    var report = getReport();
+    return '<div class="col" style="background:' + C.cream + ';">' +
+      header(C, report.nameA + " & " + report.nameB, "診断は完了しています") +
+      '<div class="scroll">' +
+      '<div style="font-size:13px;line-height:1.7;margin-bottom:16px;color:' + C.inkSoft + ';">このリンクには、ふたり分の回答がすでに含まれています。レポートタブで結果を確認してください。</div>' +
+      '<button class="btn" data-action="goto" data-value="report" style="background:' + C.ink + ';color:#fff;">レポートを見る</button></div>' +
+      tabBar(C, "diagnosis") + '</div>';
   }
-  if (!myName) {
-    const subtitle = mode === "join" ? `${parsed.a.name}さんから届いた診断です。あなたのお名前を入力して、続けて回答してください。` : "まずお名前を入力してください。回答が終わると、パートナーに送るリンクが作られます。";
-    return (
-      <div className="flex flex-col h-full" style={{ background: C.cream }}>
-        <ScreenHeader C={C} sub="はじめに" title="お名前の入力" />
-        <NameForm C={C} subtitle={subtitle} onSubmit={actions.setName} />
-        <TabBar C={C} active="diagnosis" goTo={goTo} />
-      </div>
-    );
+  if (!state.myName) {
+    var subtitle = mode === "join" ? (esc(parsed.a.name) + "さんから届いた診断です。あなたのお名前を入力して、続けて回答してください。") : "まずお名前を入力してください。回答が終わると、パートナーに送るリンクが作られます。";
+    return '<div class="col" style="background:' + C.cream + ';">' +
+      header(C, "お名前の入力", "はじめに") +
+      '<div class="scroll" style="display:flex;flex-direction:column;gap:12px;">' +
+      '<div style="font-size:13px;line-height:1.7;color:' + C.ink + ';">' + subtitle + '</div>' +
+      '<input type="text" id="nameInput" placeholder="あなたの名前" style="background:' + C.white + ';border:1px solid ' + C.line + ';color:' + C.ink + ';" />' +
+      '<button class="btn" data-action="submit-name" style="background:' + C.ink + ';color:#fff;">診断へ進む</button>' +
+      '</div>' + tabBar(C, "diagnosis") + '</div>';
   }
-  if (!myAnswers) {
-    return (
-      <div className="flex flex-col h-full" style={{ background: C.cream }}>
-        <ScreenHeader C={C} sub={`診断中・${myName}さん`} title="かんたん診断" />
-        <QuestionFlow C={C} onDone={actions.submitAnswers} />
-      </div>
-    );
+  if (!state.myAnswers) {
+    var q = QUESTIONS[state.diagStep];
+    var picked = state.tempAnswers[q.id];
+    var pct = ((state.diagStep+1)/QUESTIONS.length)*100;
+    var html = '<div class="col" style="background:' + C.cream + ';">' +
+      header(C, "かんたん診断", "診断中・" + esc(state.myName) + "さん") +
+      '<div style="padding:0 12px;"><div style="height:6px;border-radius:99px;margin:0 8px;background:' + C.line + ';"><div style="height:6px;border-radius:99px;width:' + pct + '%;background:' + C.secondary + ';"></div></div></div>' +
+      '<div class="scroll" style="padding-top:16px;display:flex;flex-direction:column;gap:12px;">' +
+      '<div style="display:flex;align-items:flex-end;gap:8px;">' +
+      '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + C.secondary + ';"><span style="font-size:12px;">✨</span></div>' +
+      '<div style="border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:80%;font-size:13px;line-height:1.6;background:' + C.white + ';color:' + C.ink + ';">' + esc(q.text) + '</div></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;padding-left:36px;">';
+    q.options.forEach(function(op) {
+      var sel = picked === op;
+      html += '<button class="pill" data-action="answer" data-value="' + esc(op) + '" style="border-color:' + (sel?C.primaryDeep:C.line) + ';background:' + (sel?C.primary:C.white) + ';color:' + (sel?"#fff":C.ink) + ';">' + esc(op) + '</button>';
+    });
+    html += '</div></div><div style="padding:0 20px 24px 20px;">' +
+      '<button class="btn" data-action="next-question" ' + (picked ? '' : 'disabled') + ' style="background:' + (picked?C.ink:C.line) + ';color:' + (picked?"#fff":C.inkSoft) + ';cursor:' + (picked?'pointer':'default') + ';">' + (state.diagStep < QUESTIONS.length-1 ? "次へ →" : "回答を送信する ➤") + '</button></div></div>';
+    return html;
   }
   if (mode === "start") {
-    return (
-      <div className="flex flex-col h-full" style={{ background: C.cream }}>
-        <ScreenHeader C={C} sub="あと少しです" title="パートナーに送りましょう" />
-        <div className="px-5 flex-1 overflow-y-auto py-2">
-          <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.ink }}>回答ありがとうございました。このリンクをパートナーに送ってください。開いて同じように回答すると、ふたりのレポートが自動で作られます。</div>
-          <LinkBox C={C} label="パートナーに送るリンク" url={shareLink} />
-        </div>
-        <TabBar C={C} active="diagnosis" goTo={goTo} />
-      </div>
-    );
+    return '<div class="col" style="background:' + C.cream + ';">' +
+      header(C, "パートナーに送りましょう", "あと少しです") +
+      '<div class="scroll">' +
+      '<div style="font-size:13px;line-height:1.7;margin-bottom:16px;color:' + C.ink + ';">回答ありがとうございました。このリンクをパートナーに送ってください。開いて同じように回答すると、ふたりのレポートが自動で作られます。</div>' +
+      linkBox(C, "パートナーに送るリンク", getShareLink()) +
+      '</div>' + tabBar(C, "diagnosis") + '</div>';
   }
-  return (
-    <div className="flex flex-col h-full" style={{ background: C.cream }}>
-      <ScreenHeader C={C} sub="回答ありがとうございました" title="レポートができました" />
-      <div className="px-5 flex-1 overflow-y-auto py-2">
-        <button onClick={() => goTo("report")} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold mb-4" style={{ background: C.ink, color: "#fff" }}>レポートを見る</button>
-        <LinkBox C={C} label="この結果を保存・共有するリンク" url={resultLink} />
-      </div>
-      <TabBar C={C} active="diagnosis" goTo={goTo} />
-    </div>
-  );
+  return '<div class="col" style="background:' + C.cream + ';">' +
+    header(C, "レポートができました", "回答ありがとうございました") +
+    '<div class="scroll">' +
+    '<button class="btn" data-action="goto" data-value="report" style="background:' + C.ink + ';color:#fff;margin-bottom:16px;">レポートを見る</button>' +
+    linkBox(C, "この結果を保存・共有するリンク", getResultLink()) +
+    '</div>' + tabBar(C, "diagnosis") + '</div>';
 }
 
-function GapBar({ C, label, aName, bName, a, b }) {
-  return (
-    <div className="mb-4">
-      <div className="flex justify-between text-[11px] mb-1" style={{ color: C.inkSoft }}><span>{label}</span><span>{aName} {a}% ／ {bName} {b}%</span></div>
-      <div className="h-3 rounded-full overflow-hidden flex" style={{ background: C.line }}>
-        <div style={{ width: `${a}%`, background: C.primary }} />
-        <div style={{ width: `${b}%`, background: C.secondary }} />
-      </div>
-    </div>
-  );
+function linkBox(C, label, url) {
+  return '<div style="border-radius:16px;padding:16px;margin-bottom:16px;background:' + C.white + ';border:1px solid ' + C.line + ';">' +
+    '<div style="font-size:11px;font-weight:700;margin-bottom:8px;color:' + C.secondaryDeep + ';">🔗 ' + esc(label) + '</div>' +
+    '<input type="text" readonly id="linkBoxInput" value="' + esc(url) + '" onclick="this.select()" style="width:100%;font-family:monospace;font-size:11px;margin-bottom:8px;background:' + C.cream + ';border:1px solid ' + C.line + ';color:' + C.ink + ';" />' +
+    '<button class="btn" data-action="copy-link" data-value="' + esc(url) + '" style="background:' + C.ink + ';color:#fff;">📋 リンクをコピー</button>' +
+    '<div style="font-size:10px;margin-top:8px;color:' + C.inkSoft + ';">コピーできない場合は、上のボックスを長押しして手動でコピーしてください。</div></div>';
 }
 
-function ReportScreen({ C, goTo, ctx }) {
-  const { report } = ctx;
+function gapBar(C, label, aName, bName, a, b) {
+  return '<div style="margin-bottom:16px;">' +
+    '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;color:' + C.inkSoft + ';"><span>' + esc(label) + '</span><span>' + esc(aName) + ' ' + a + '% ／ ' + esc(bName) + ' ' + b + '%</span></div>' +
+    '<div style="height:12px;border-radius:99px;overflow:hidden;display:flex;background:' + C.line + ';">' +
+    '<div style="width:' + a + '%;background:' + C.primary + ';"></div><div style="width:' + b + '%;background:' + C.secondary + ';"></div></div></div>';
+}
+
+function screenReport(C) {
+  var report = getReport();
   if (!report) {
-    return (
-      <div className="flex flex-col h-full" style={{ background: C.cream }}>
-        <ScreenHeader C={C} sub="レポート" title="まだ準備できていません" />
-        <div className="px-5 flex-1 overflow-y-auto pb-2">
-          <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.inkSoft }}>ふたり分の回答が揃うと、ここに分析結果が表示されます。</div>
-          <button onClick={() => goTo("diagnosis")} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold" style={{ background: C.ink, color: "#fff" }}>診断へ進む</button>
-        </div>
-        <TabBar C={C} active="report" goTo={goTo} />
-      </div>
-    );
+    return '<div class="col" style="background:' + C.cream + ';">' +
+      header(C, "まだ準備できていません", "レポート") +
+      '<div class="scroll"><div style="font-size:13px;line-height:1.7;margin-bottom:16px;color:' + C.inkSoft + ';">ふたり分の回答が揃うと、ここに分析結果が表示されます。</div>' +
+      '<button class="btn" data-action="goto" data-value="diagnosis" style="background:' + C.ink + ';color:#fff;">診断へ進む</button></div>' +
+      tabBar(C, "report") + '</div>';
   }
-  return (
-    <div className="flex flex-col h-full" style={{ background: C.cream }}>
-      <ScreenHeader C={C} sub="ふたりの回答から" title="ふたりのギャップレポート" />
-      <div className="px-5 flex-1 overflow-y-auto pb-2">
-        <div className="rounded-2xl p-4 mb-4" style={{ background: C.white, border: `1px solid ${C.line}` }}>
-          {report.categories.map((cat) => (<GapBar key={cat.label} C={C} label={cat.label} aName={report.nameA} bName={report.nameB} a={cat[report.nameA]} b={cat[report.nameB]} />))}
-        </div>
-        <div className="rounded-2xl p-4 mb-4 flex items-start gap-3" style={{ background: C.cream, border: `1px solid ${C.primary}` }}>
-          <span style={{fontSize:16,color:C.primaryDeep}}>♡</span>
-          <div className="text-[12.5px] leading-relaxed" style={{ color: C.ink }}>{report.insight}</div>
-        </div>
-        <button onClick={() => goTo("script")} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold mb-4" style={{ background: C.ink, color: "#fff" }}>💬 会話のたたき台を見る</button>
-      </div>
-      <TabBar C={C} active="report" goTo={goTo} />
-    </div>
-  );
+  var catsHtml = "";
+  report.categories.forEach(function(cat) { catsHtml += gapBar(C, cat.label, report.nameA, report.nameB, cat[report.nameA], cat[report.nameB]); });
+  return '<div class="col" style="background:' + C.cream + ';">' +
+    header(C, "ふたりのギャップレポート", "ふたりの回答から") +
+    '<div class="scroll">' +
+    '<div style="border-radius:16px;padding:16px;margin-bottom:16px;background:' + C.white + ';border:1px solid ' + C.line + ';">' + catsHtml + '</div>' +
+    '<div style="border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:12px;background:' + C.cream + ';border:1px solid ' + C.primary + ';">' +
+    '<span style="font-size:16px;color:' + C.primaryDeep + ';">♡</span>' +
+    '<div style="font-size:12.5px;line-height:1.7;color:' + C.ink + ';">' + esc(report.insight) + '</div></div>' +
+    '<button class="btn" data-action="goto" data-value="script" style="background:' + C.ink + ';color:#fff;margin-bottom:16px;">💬 会話のたたき台を見る</button>' +
+    '</div>' + tabBar(C, "report") + '</div>';
 }
 
-function ScriptScreen({ C, goTo, ctx }) {
-  const [soft, setSoft] = useState(false);
-  const { report } = ctx;
+function screenScript(C) {
+  var report = getReport();
   if (!report) {
-    return (
-      <div className="flex flex-col h-full" style={{ background: C.cream }}>
-        <ScreenHeader C={C} sub="会話のたたき台" title="レポートが必要です" />
-        <div className="px-5 flex-1 overflow-y-auto pb-2"><button onClick={() => goTo("report")} className="w-full rounded-2xl py-3 text-center text-[13px] font-bold" style={{ background: C.ink, color: "#fff" }}>レポートへ進む</button></div>
-        <TabBar C={C} active="report" goTo={goTo} />
-      </div>
-    );
+    return '<div class="col" style="background:' + C.cream + ';">' +
+      header(C, "レポートが必要です", "会話のたたき台") +
+      '<div class="scroll"><button class="btn" data-action="goto" data-value="report" style="background:' + C.ink + ';color:#fff;">レポートへ進む</button></div>' +
+      tabBar(C, "report") + '</div>';
   }
-  return (
-    <div className="flex flex-col h-full" style={{ background: C.cream }}>
-      <ScreenHeader C={C} sub="ふたりの回答から作成" title="話してみませんか？" />
-      <div className="px-5 flex-1 overflow-y-auto pb-2">
-        <div className="rounded-2xl p-5 mb-4" style={{ background: C.white, border: `1px solid ${C.line}` }}>
-          <div className="text-[11px] font-bold mb-2" style={{ color: C.secondaryDeep }}>{soft ? "やわらかい言い回し" : "そのまま伝える場合"}</div>
-          <div className="text-[13.5px] leading-relaxed" style={{ color: C.ink }}>{soft ? report.script_soft : report.script_direct}</div>
-        </div>
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => setSoft(false)} className="flex-1 rounded-xl py-2.5 text-[12px] font-bold" style={{ background: !soft ? C.ink : C.white, color: !soft ? "#fff" : C.ink, border: `1px solid ${C.line}` }}>このまま伝える</button>
-          <button onClick={() => setSoft(true)} className="flex-1 rounded-xl py-2.5 text-[12px] font-bold" style={{ background: soft ? C.primary : C.white, color: soft ? "#fff" : C.ink, border: `1px solid ${C.line}` }}>言い回しを変える</button>
-        </div>
-      </div>
-      <TabBar C={C} active="report" goTo={goTo} />
-    </div>
-  );
+  var soft = state.scriptSoft;
+  return '<div class="col" style="background:' + C.cream + ';">' +
+    header(C, "話してみませんか？", "ふたりの回答から作成") +
+    '<div class="scroll">' +
+    '<div style="border-radius:16px;padding:20px;margin-bottom:16px;background:' + C.white + ';border:1px solid ' + C.line + ';">' +
+    '<div style="font-size:11px;font-weight:700;margin-bottom:8px;color:' + C.secondaryDeep + ';">' + (soft ? "やわらかい言い回し" : "そのまま伝える場合") + '</div>' +
+    '<div style="font-size:13.5px;line-height:1.7;color:' + C.ink + ';">' + esc(soft ? report.script_soft : report.script_direct) + '</div></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:16px;">' +
+    '<button data-action="script-mode" data-value="direct" style="flex:1;border-radius:12px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;background:' + (!soft?C.ink:C.white) + ';color:' + (!soft?"#fff":C.ink) + ';border:1px solid ' + C.line + ';">このまま伝える</button>' +
+    '<button data-action="script-mode" data-value="soft" style="flex:1;border-radius:12px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;background:' + (soft?C.primary:C.white) + ';color:' + (soft?"#fff":C.ink) + ';border:1px solid ' + C.line + ';">言い回しを変える</button>' +
+    '</div></div>' + tabBar(C, "report") + '</div>';
 }
 
-function LogScreen({ C, goTo }) {
-  const initial = [{ id: 1, name: "朝食の準備", done: true }, { id: 2, name: "ゴミ出し", done: true }, { id: 3, name: "保育園の持ち物準備", done: false }];
-  const [items, setItems] = useState(initial);
-  const toggle = (id) => setItems((cur) => cur.map((i) => (i.id === id ? { ...i, done: !i.done } : i)));
-  return (
-    <div className="flex flex-col h-full" style={{ background: C.cream }}>
-      <ScreenHeader C={C} sub="※ここはまだモックです" title="家事ログ" />
-      <div className="px-5 flex-1 overflow-y-auto pb-2">
-        <div className="flex flex-col gap-2 mb-4">
-          {items.map((i) => (
-            <button key={i.id} onClick={() => toggle(i.id)} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-left" style={{ background: C.white, border: `1px solid ${C.line}` }}>
-              <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: i.done ? C.secondary : "transparent", border: `2px solid ${i.done ? C.secondary : C.line}` }}>{i.done && <span style={{fontSize:10,color:'#fff'}}>✓</span>}</div>
-              <div className="text-[13px]" style={{ color: i.done ? C.inkSoft : C.ink, textDecoration: i.done ? "line-through" : "none" }}>{i.name}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-      <TabBar C={C} active="log" goTo={goTo} />
-    </div>
-  );
+function screenLog(C) {
+  var items = [[1,"朝食の準備"],[2,"ゴミ出し"],[3,"保育園の持ち物準備"]];
+  var html = '<div class="col" style="background:' + C.cream + ';">' +
+    header(C, "家事ログ", "※ここはまだモックです") +
+    '<div class="scroll"><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">';
+  items.forEach(function(it) {
+    var done = state.logDone[it[0]];
+    html += '<button data-action="toggle-log" data-value="' + it[0] + '" style="display:flex;align-items:center;gap:12px;border-radius:16px;padding:12px 16px;text-align:left;cursor:pointer;background:' + C.white + ';border:1px solid ' + C.line + ';">' +
+      '<span style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (done?C.secondary:"transparent") + ';border:2px solid ' + (done?C.secondary:C.line) + ';">' + (done?'<span style="font-size:10px;color:#fff;">✓</span>':'') + '</span>' +
+      '<span style="font-size:13px;color:' + (done?C.inkSoft:C.ink) + ';text-decoration:' + (done?"line-through":"none") + ';">' + esc(it[1]) + '</span></button>';
+  });
+  html += '</div></div>' + tabBar(C, "log") + '</div>';
+  return html;
 }
 
-function Prototype() {
-  const [idx, setIdx] = useState(0);
-  const [paletteKey, setPaletteKey] = useState("elegant");
-  const C = PALETTES[paletteKey];
-  const goTo = (key) => setIdx(SCREENS.findIndex((s) => s.key === key));
-  const current = SCREENS[idx].key;
+/* ---------------- render ---------------- */
+function render() {
+  var C = PALETTES[state.paletteKey];
+  var screenFns = { home: screenHome, diagnosis: screenDiagnosis, report: screenReport, script: screenScript, log: screenLog };
+  var current = SCREENS[state.screenIdx].key;
 
-  const [parsed] = useState(() => parseHash());
-  const [myName, setMyName] = useState("");
-  const [myAnswers, setMyAnswers] = useState(null);
+  var paletteHtml = "";
+  Object.keys(PALETTES).forEach(function(key) {
+    var pal = PALETTES[key];
+    var active = state.paletteKey === key;
+    var dots = pal.swatch.map(function(c) { return '<span class="dot" style="background:' + c + ';"></span>'; }).join("");
+    paletteHtml += '<button class="swatch-btn" data-action="palette" data-value="' + key + '" style="border:' + (active ? "2px solid #4A4038" : "1px solid #E7DCCE") + ';">' +
+      '<span style="display:flex;">' + dots + '</span><span>' + esc(pal.name) + '</span></button>';
+  });
 
-  const mode = parsed && parsed.a && parsed.b ? "result" : parsed && parsed.a ? "join" : "start";
+  var dotsHtml = "";
+  SCREENS.forEach(function(s, i) {
+    dotsHtml += '<button data-action="goto" data-value="' + s.key + '" style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:' + (i === state.screenIdx ? C.primary : "#E7DCCE") + ';"></button>';
+  });
 
-  const report = useMemo(() => {
-    if (mode === "result") return computeReport(parsed.a, parsed.b);
-    if (mode === "join" && myAnswers) return computeReport(parsed.a, { name: myName, answers: myAnswers });
-    return null;
-  }, [mode, parsed, myName, myAnswers]);
+  var html =
+    '<div class="wrap">' +
+    '<div style="text-align:center;margin-bottom:16px;">' +
+    '<div style="font-size:11px;letter-spacing:0.2em;margin-bottom:4px;color:#8A7E71;">FUTARIZM — STATIC</div>' +
+    '<div class="title-jp" style="font-size:26px;font-weight:700;color:#4A4038;">フタリズム</div>' +
+    '<div style="font-size:12px;margin-top:4px;color:#8A7E71;">共働き夫婦向け・家事バイアス可視化AI</div></div>' +
+    '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:24px;">' + paletteHtml + '</div>' +
+    '<div class="phone"><div class="screen" style="background:' + C.cream + ';"><div class="notch"></div>' +
+    screenFns[current](C) +
+    '</div></div>' +
+    '<div class="navctrl">' +
+    '<button class="navbtn" data-action="prev">‹</button>' +
+    '<div style="display:flex;gap:8px;">' + dotsHtml + '</div>' +
+    '<button class="navbtn" data-action="next">›</button>' +
+    '</div>' +
+    '<div style="font-size:12px;margin-top:12px;font-weight:700;color:#8A7E71;">' + esc(SCREENS[state.screenIdx].label) + '</div>' +
+    '</div>';
 
-  const shareLink = useMemo(() => { if (mode === "start" && myAnswers) return buildLink({ a: { name: myName, answers: myAnswers } }); return ""; }, [mode, myName, myAnswers]);
-  const resultLink = useMemo(() => {
-    if (mode === "join" && myAnswers) return buildLink({ a: parsed.a, b: { name: myName, answers: myAnswers } });
-    if (mode === "result") return `${window.location.origin}${window.location.pathname}${window.location.hash}`;
-    return "";
-  }, [mode, parsed, myName, myAnswers]);
-
-  const displayName = mode === "result" ? "" : myName;
-  const ctx = { mode, parsed, myName: displayName, myAnswers, report, shareLink, resultLink };
-  const actions = { setName: setMyName, submitAnswers: setMyAnswers };
-
-  const screenMap = {
-    home: <HomeScreen C={C} goTo={goTo} ctx={ctx} />,
-    diagnosis: <DiagnosisScreen C={C} goTo={goTo} ctx={ctx} actions={actions} />,
-    report: <ReportScreen C={C} goTo={goTo} ctx={ctx} />,
-    script: <ScriptScreen C={C} goTo={goTo} ctx={ctx} />,
-    log: <LogScreen C={C} goTo={goTo} />,
-  };
-
-  return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4" style={{ background: "#F1EAE0" }}>
-      <div className="text-center mb-4">
-        <div className="text-[11px] tracking-[0.2em] mb-1" style={{ color: "#8A7E71" }}>FUTARIZM — STANDALONE</div>
-        <div className="text-[26px] font-bold" style={{ color: "#4A4038", fontFamily: "'Kaisei Decol', serif" }}>フタリズム</div>
-        <div className="text-[12px] mt-1" style={{ color: "#8A7E71" }}>共働き夫婦向け・家事バイアス可視化AI</div>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2 mb-6">
-        {Object.entries(PALETTES).map(([key, pal]) => (
-          <button key={key} onClick={() => setPaletteKey(key)} className="flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5" style={{ background: "#FFFFFF", border: paletteKey === key ? "2px solid #4A4038" : "1px solid #E7DCCE" }}>
-            <div className="flex -space-x-1">{pal.swatch.map((c, i) => (<div key={i} className="w-4 h-4 rounded-full border border-white" style={{ background: c }} />))}</div>
-            <span className="text-[11px] font-bold" style={{ color: "#4A4038" }}>{pal.name}</span>
-          </button>
-        ))}
-      </div>
-      <div className="relative rounded-[2.5rem] p-3 shadow-2xl" style={{ background: "#2A2620", width: 360 }}>
-        <div className="rounded-[2rem] overflow-hidden relative" style={{ background: C.cream, height: 680 }}>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 rounded-b-2xl z-10" style={{ width: 120, height: 22, background: "#2A2620" }} />
-          <div className="h-full">{screenMap[current]}</div>
-        </div>
-      </div>
-      <div className="flex items-center gap-4 mt-6">
-        <button onClick={() => setIdx((i) => (i - 1 + SCREENS.length) % SCREENS.length)} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#FFFFFF", border: "1px solid #E7DCCE" }}>‹</button>
-        <div className="flex gap-2">{SCREENS.map((s, i) => (<button key={s.key} onClick={() => setIdx(i)} className="w-2.5 h-2.5 rounded-full" style={{ background: i === idx ? C.primary : "#E7DCCE" }} aria-label={s.label} />))}</div>
-        <button onClick={() => setIdx((i) => (i + 1) % SCREENS.length)} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#FFFFFF", border: "1px solid #E7DCCE" }}>›</button>
-      </div>
-      <div className="text-[12px] mt-3 font-bold" style={{ color: "#8A7E71" }}>{SCREENS[idx].label}</div>
-    </div>
-  );
+  document.getElementById("app").innerHTML = html;
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<Prototype />);
+/* ---------------- event delegation ---------------- */
+document.addEventListener("click", function(e) {
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var action = el.dataset.action, value = el.dataset.value;
+
+  if (action === "goto") { state.screenIdx = SCREENS.findIndex(function(s){return s.key===value;}); }
+  else if (action === "prev") { state.screenIdx = (state.screenIdx - 1 + SCREENS.length) % SCREENS.length; }
+  else if (action === "next") { state.screenIdx = (state.screenIdx + 1) % SCREENS.length; }
+  else if (action === "palette") { state.paletteKey = value; }
+  else if (action === "submit-name") {
+    var v = document.getElementById("nameInput").value.trim();
+    if (!v) return;
+    state.myName = v;
+  }
+  else if (action === "answer") {
+    var q = QUESTIONS[state.diagStep];
+    state.tempAnswers[q.id] = value;
+  }
+  else if (action === "next-question") {
+    var q2 = QUESTIONS[state.diagStep];
+    if (!state.tempAnswers[q2.id]) return;
+    if (state.diagStep < QUESTIONS.length - 1) { state.diagStep++; }
+    else { state.myAnswers = state.tempAnswers; }
+  }
+  else if (action === "script-mode") { state.scriptSoft = (value === "soft"); }
+  else if (action === "toggle-log") { state.logDone[value] = !state.logDone[value]; }
+  else if (action === "copy-link") {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(value).then(function() {
+        el.textContent = "コピーしました";
+        setTimeout(render, 1500);
+      }).catch(function() {});
+    }
+    return;
+  }
+  render();
+});
+
+render();
 </script>
 </body>
 </html>
