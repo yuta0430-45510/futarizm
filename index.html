@@ -45,9 +45,10 @@ var SCREENS = [
 ];
 var QUESTIONS = [
   { id: "q1", text: "実家では、家事は主に誰がしていましたか？", options: ["母", "父", "二人で半々", "祖父母など"] },
-  { id: "q2", text: "「名もなき家事」に、より気づいて対応しているのはどちらだと思いますか？", options: ["自分の方が気づいている", "パートナーの方が気づいている", "ふたり同じくらい", "わからない"] },
   { id: "q3", text: "今の家事分担にどれくらい満足していますか？", options: ["1 とても不満", "2 やや不満", "3 普通", "4 やや満足", "5 とても満足"] },
-  { id: "q4", text: "一番負担に感じている家事は何ですか？", options: ["料理", "掃除", "買い物", "名もなき家事全般"] }
+  { id: "q4", text: "負担に感じている家事はどれですか？(いくつでも選べます)", options: ["料理", "掃除", "買い物"], multi: true },
+  { id: "q5", text: "「名もなき家事全般」にも負担を感じますか？", options: ["とても感じる", "少し感じる", "あまり感じない"] },
+  { id: "q2", text: "「名もなき家事」に、より気づいて対応しているのはどちらだと思いますか？", options: ["自分の方が気づいている", "パートナーの方が気づいている", "ふたり同じくらい", "わからない"] }
 ];
 
 /* ---------------- URL-based data passing ---------------- */
@@ -72,15 +73,25 @@ function selfShare(q2) {
 function satNum(q3) { var n = parseInt(q3, 10); return isNaN(n) ? 3 : n; }
 function computeReport(a, b) {
   var nameA = a.name, nameB = b.name;
+  function burdenScore(ans) {
+    if (ans === "とても感じる") return 3;
+    if (ans === "少し感じる") return 2;
+    if (ans === "あまり感じない") return 1;
+    return 2;
+  }
   var aFromA = selfShare(a.answers.q2);
   var aFromB = 100 - selfShare(b.answers.q2);
   var invisibleA = Math.round((aFromA + aFromB) / 2);
+  var q5Diff = burdenScore(a.answers.q5) - burdenScore(b.answers.q5);
+  invisibleA += q5Diff * 6;
   invisibleA = Math.min(85, Math.max(15, invisibleA));
   var invisibleCat = { label: "名もなき家事" };
   invisibleCat[nameA] = invisibleA; invisibleCat[nameB] = 100 - invisibleA;
   function burdenCat(label) {
-    var aw = a.answers.q4 === label ? 65 : 50;
-    var bw = b.answers.q4 === label ? 65 : 50;
+    var aSelected = Array.isArray(a.answers.q4) ? a.answers.q4.indexOf(label) !== -1 : a.answers.q4 === label;
+    var bSelected = Array.isArray(b.answers.q4) ? b.answers.q4.indexOf(label) !== -1 : b.answers.q4 === label;
+    var aw = aSelected ? 65 : 50;
+    var bw = bSelected ? 65 : 50;
     var total = aw + bw;
     var aPct = Math.round((aw / total) * 100);
     var c = { label: label };
@@ -110,7 +121,8 @@ var state = {
   diagStep: 0,
   tempAnswers: {},
   scriptSoft: false,
-  logDone: { 1: true, 2: true, 3: false }
+  logDone: { 1: true, 2: true, 3: false },
+  showInfoModal: false
 };
 state.mode = (state.parsed && state.parsed.a && state.parsed.b) ? "result" : (state.parsed && state.parsed.a) ? "join" : "start";
 if (state.mode === "result") {
@@ -135,6 +147,22 @@ function getResultLink() {
 }
 
 /* ---------------- screen builders ---------------- */
+function infoIcon(C) {
+  return '<button data-action="show-info" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid ' + C.secondaryDeep + ';background:' + C.white + ';color:' + C.secondaryDeep + ';font-size:11px;font-weight:700;line-height:1;cursor:pointer;margin-left:4px;vertical-align:middle;">？</button>';
+}
+function infoModal(C) {
+  if (!state.showInfoModal) return "";
+  var examples = ["トイレットペーパーや洗剤の在庫を把握して補充する", "ゴミ出しの日を覚えておく", "子どもの学校からのお便りを確認する", "季節の変わり目に衣替えのタイミングを判断する", "冷蔵庫の中身から献立を考える", "体調不良に気づいて薬や病院の手配をする"];
+  var exHtml = examples.map(function(e) { return '<li style="margin-bottom:8px;">' + esc(e) + '</li>'; }).join("");
+  return '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;" data-action="close-info">' +
+    '<div data-action="noop" style="background:' + C.white + ';border-radius:20px;max-width:340px;width:100%;padding:24px;max-height:80vh;overflow-y:auto;">' +
+    '<div class="title-jp" style="font-size:17px;font-weight:700;margin-bottom:12px;color:' + C.ink + ';">「名もなき家事」とは？</div>' +
+    '<div style="font-size:13px;line-height:1.8;margin-bottom:14px;color:' + C.ink + ';">はっきりとした担当者が決まっておらず、家事の一覧にも載りにくいけれど、誰かが気づいて対応しないと家庭が回らなくなる作業のことです。例えば：</div>' +
+    '<ul style="font-size:12.5px;line-height:1.7;color:' + C.inkSoft + ';padding-left:20px;margin:0 0 16px 0;">' + exHtml + '</ul>' +
+    '<div style="font-size:11px;line-height:1.7;color:' + C.inkSoft + ';margin-bottom:16px;">診断ではこうした「気づいて対応する」役割をどちらがより担っていると感じているか、ふたりの感覚のズレを見ています。</div>' +
+    '<button class="btn" data-action="close-info" style="background:' + C.ink + ';color:#fff;">閉じる</button>' +
+    '</div></div>';
+}
 function header(C, title, sub) {
   return '<div style="padding:24px 20px 12px 20px;">' +
     '<div style="font-size:11px;font-weight:700;margin-bottom:4px;color:' + C.secondaryDeep + ';">' + esc(sub) + '</div>' +
@@ -209,6 +237,7 @@ function screenDiagnosis(C) {
   if (!state.myAnswers) {
     var q = QUESTIONS[state.diagStep];
     var picked = state.tempAnswers[q.id];
+    var hasAnswer = q.multi ? (picked && picked.length > 0) : !!picked;
     var pct = ((state.diagStep+1)/QUESTIONS.length)*100;
     var html = '<div class="col" style="background:' + C.cream + ';">' +
       header(C, "かんたん診断", "診断中・" + esc(state.myName) + "さん") +
@@ -216,14 +245,14 @@ function screenDiagnosis(C) {
       '<div class="scroll" style="padding-top:16px;display:flex;flex-direction:column;gap:12px;">' +
       '<div style="display:flex;align-items:flex-end;gap:8px;">' +
       '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + C.secondary + ';"><span style="font-size:12px;">✨</span></div>' +
-      '<div style="border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:80%;font-size:13px;line-height:1.6;background:' + C.white + ';color:' + C.ink + ';">' + esc(q.text) + '</div></div>' +
+      '<div style="border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:80%;font-size:13px;line-height:1.6;background:' + C.white + ';color:' + C.ink + ';">' + esc(q.text) + ((q.id === "q2" || q.id === "q5") ? infoIcon(C) : "") + '</div></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;padding-left:36px;">';
     q.options.forEach(function(op) {
-      var sel = picked === op;
-      html += '<button class="pill" data-action="answer" data-value="' + esc(op) + '" style="border-color:' + (sel?C.primaryDeep:C.line) + ';background:' + (sel?C.primary:C.white) + ';color:' + (sel?"#fff":C.ink) + ';">' + esc(op) + '</button>';
+      var sel = q.multi ? (picked && picked.indexOf(op) !== -1) : picked === op;
+      html += '<button class="pill" data-action="answer" data-value="' + esc(op) + '" style="border-color:' + (sel?C.primaryDeep:C.line) + ';background:' + (sel?C.primary:C.white) + ';color:' + (sel?"#fff":C.ink) + ';">' + (sel?"✓ ":"") + esc(op) + '</button>';
     });
     html += '</div></div><div style="padding:0 20px 24px 20px;">' +
-      '<button class="btn" data-action="next-question" ' + (picked ? '' : 'disabled') + ' style="background:' + (picked?C.ink:C.line) + ';color:' + (picked?"#fff":C.inkSoft) + ';cursor:' + (picked?'pointer':'default') + ';">' + (state.diagStep < QUESTIONS.length-1 ? "次へ →" : "回答を送信する ➤") + '</button></div></div>';
+      '<button class="btn" data-action="next-question" ' + (hasAnswer ? '' : 'disabled') + ' style="background:' + (hasAnswer?C.ink:C.line) + ';color:' + (hasAnswer?"#fff":C.inkSoft) + ';cursor:' + (hasAnswer?'pointer':'default') + ';">' + (state.diagStep < QUESTIONS.length-1 ? "次へ →" : "回答を送信する ➤") + '</button></div></div>';
     return html;
   }
   if (mode === "start") {
@@ -252,7 +281,7 @@ function linkBox(C, label, url) {
 
 function gapBar(C, label, aName, bName, a, b) {
   return '<div style="margin-bottom:16px;">' +
-    '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;color:' + C.inkSoft + ';"><span>' + esc(label) + '</span><span>' + esc(aName) + ' ' + a + '% ／ ' + esc(bName) + ' ' + b + '%</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;color:' + C.inkSoft + ';"><span>' + esc(label) + (label === "名もなき家事" ? infoIcon(C) : "") + '</span><span>' + esc(aName) + ' ' + a + '% ／ ' + esc(bName) + ' ' + b + '%</span></div>' +
     '<div style="height:12px;border-radius:99px;overflow:hidden;display:flex;background:' + C.line + ';">' +
     '<div style="width:' + a + '%;background:' + C.primary + ';"></div><div style="width:' + b + '%;background:' + C.secondary + ';"></div></div></div>';
 }
@@ -351,7 +380,7 @@ function render() {
     '<button class="navbtn" data-action="next">›</button>' +
     '</div>' +
     '<div style="font-size:12px;margin-top:12px;font-weight:700;color:#8A7E71;">' + esc(SCREENS[state.screenIdx].label) + '</div>' +
-    '</div>';
+    '</div>' + infoModal(C);
 
   document.getElementById("app").innerHTML = html;
 }
@@ -373,15 +402,26 @@ document.addEventListener("click", function(e) {
   }
   else if (action === "answer") {
     var q = QUESTIONS[state.diagStep];
-    state.tempAnswers[q.id] = value;
+    if (q.multi) {
+      var arr = state.tempAnswers[q.id] ? state.tempAnswers[q.id].slice() : [];
+      var idx = arr.indexOf(value);
+      if (idx === -1) { arr.push(value); } else { arr.splice(idx, 1); }
+      state.tempAnswers[q.id] = arr;
+    } else {
+      state.tempAnswers[q.id] = value;
+    }
   }
   else if (action === "next-question") {
     var q2 = QUESTIONS[state.diagStep];
-    if (!state.tempAnswers[q2.id]) return;
+    var ans2 = state.tempAnswers[q2.id];
+    var ok2 = q2.multi ? (ans2 && ans2.length > 0) : !!ans2;
+    if (!ok2) return;
     if (state.diagStep < QUESTIONS.length - 1) { state.diagStep++; }
     else { state.myAnswers = state.tempAnswers; }
   }
   else if (action === "script-mode") { state.scriptSoft = (value === "soft"); }
+  else if (action === "show-info") { state.showInfoModal = true; }
+  else if (action === "close-info") { state.showInfoModal = false; }
   else if (action === "toggle-log") { state.logDone[value] = !state.logDone[value]; }
   else if (action === "copy-link") {
     if (navigator.clipboard) {
